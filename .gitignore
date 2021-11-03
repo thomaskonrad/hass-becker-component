@@ -129,3 +129,6 @@ dmypy.json
 .pyre/
 
 .idea/
+
+# Database file
+centronic-stick.db

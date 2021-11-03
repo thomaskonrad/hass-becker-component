@@ -1,6 +1,7 @@
 """Handling of the Becker USB device."""
 
 import logging
+import os
 
 import voluptuous as vol
 from pybecker.becker import Becker
@@ -16,6 +17,7 @@ PAIR_SCHEMA = vol.Schema(
     }
 )
 
+DEFAULT_DATABASE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'centronic-stick.db')
 
 class PyBecker:
     """Manages a (single, global) pybecker Becker instance."""
@@ -29,7 +31,7 @@ class PyBecker:
         if not stick_path:
             stick_path = DEFAULT_CONF_USB_STICK_PATH
 
-        cls.becker = Becker(stick_path, True)
+        cls.becker = Becker(stick_path, True, DEFAULT_DATABASE_PATH)
 
     @classmethod
     async def async_register_services(cls, hass):
