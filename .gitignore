@@ -132,3 +132,6 @@ dmypy.json
 
 # Database file
 centronic-stick.db
+
+# pybecker library (in case a local copy is used)
+pybecker/
