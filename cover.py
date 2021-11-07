@@ -25,7 +25,7 @@ from homeassistant.exceptions import TemplateError
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from . import extract_entities, initialise_templates
+from . import initialise_templates
 from .const import (
     CONF_CHANNEL,
     DEVICE_CLASS,
@@ -89,10 +89,9 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             CONF_VALUE_TEMPLATE: state_template,
         }
         initialise_templates(hass, templates)
-        entity_ids = extract_entities(device, "cover", None, templates)
         covers.append(
             BeckerEntity(
-                PyBecker.becker, friendly_name, channel, state_template, entity_ids
+                PyBecker.becker, friendly_name, channel, state_template
             )
         )
 
@@ -102,13 +101,12 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 class BeckerEntity(CoverEntity, RestoreEntity):
     """Representation of a Becker cover entity."""
 
-    def __init__(self, becker, name, channel, state_template, entity_ids, position=0):
+    def __init__(self, becker, name, channel, state_template, position=50):
         """Init the Becker device."""
         self._becker = becker
         self._name = name
         self._channel = channel
         self._template = state_template
-        self._entities = entity_ids
         self._position = position
         self._state = True
 
@@ -188,9 +186,14 @@ class BeckerEntity(CoverEntity, RestoreEntity):
         """Update the position of the cover."""
         if self._template is not None:
             try:
-                state = self._template.async_render().lower()
-                if state in _VALID_STATES:
-                    if state in ("true", STATE_OPEN):
+                state = self._template.async_render()
+
+                if isinstance(state, bool):
+                    self._position = 100 if state is True else 0
+                elif isinstance(state, int) and state >= 0 and state <= 100:
+                    self._position = state
+                elif isinstance(state, str) and state.lower() in _VALID_STATES:
+                    if state.lower() in ("true", STATE_OPEN):
                         self._position = 100
                     else:
                         self._position = 0
@@ -198,7 +201,7 @@ class BeckerEntity(CoverEntity, RestoreEntity):
                     _LOGGER.error(
                         "Received invalid cover is_on state: %s. Expected: %s",
                         state,
-                        ", ".join(_VALID_STATES),
+                        ", ".join(_VALID_STATES) + ", numbers 0 -- 100",
                     )
                     self._position = None
             except TemplateError as ex:
